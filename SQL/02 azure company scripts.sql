@@ -160,14 +160,7 @@ FROM departament d
 JOIN dept_locations l ON l.Dnumber = d.Dnumber
 GROUP BY d.Dnumber, d.Dname;
  
--- C6. Departamentos presentes em Stafford, com o gerente
-SELECT d.Dname AS departamento,
-       CONCAT(m.Fname, ' ', m.Lname) AS gerente
-FROM departament d
-JOIN dept_locations l ON l.Dnumber = d.Dnumber
-JOIN employee m       ON m.Ssn = d.Mgr_ssn
-WHERE l.Dlocation = 'Stafford';
- 
+
 -- =====================================================================
 -- D. PROJETOS E HORAS
 -- =====================================================================
