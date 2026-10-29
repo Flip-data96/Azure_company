@@ -27,7 +27,7 @@ CREATE TABLE employee (
   CONSTRAINT chk_employee_sex     CHECK (Sex IN ('M', 'F')),
   CONSTRAINT fk_employee_super    FOREIGN KEY (Super_ssn) REFERENCES employee (Ssn)
     ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE = InnoDB;
+);
  
 CREATE TABLE departament (            -- nome mantido (com esse "erro") por causa do .pbix
   Dname             VARCHAR(30)  NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE departament (            -- nome mantido (com esse "erro") por caus
   CONSTRAINT pk_dept           PRIMARY KEY (Dnumber),
   CONSTRAINT unique_name_dept  UNIQUE (Dname),
   CONSTRAINT chk_date_dept     CHECK (Dept_create_date < Mgr_start_date)
-) ENGINE = InnoDB;
+);
  
 CREATE TABLE dept_locations (
   Dnumber    INT          NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE dept_locations (
   CONSTRAINT pk_dept_locations PRIMARY KEY (Dnumber, Dlocation),
   CONSTRAINT fk_dept_locations FOREIGN KEY (Dnumber) REFERENCES departament (Dnumber)
     ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE = InnoDB;
+);
  
 CREATE TABLE project (
   Pname      VARCHAR(30)  NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE project (
   CONSTRAINT unique_project  UNIQUE (Pname),
   CONSTRAINT fk_project      FOREIGN KEY (Dnum) REFERENCES departament (Dnumber)
     ON UPDATE CASCADE
-) ENGINE = InnoDB;
+);
  
 CREATE TABLE works_on (
   Essn   CHAR(9)       NOT NULL,
@@ -69,7 +69,7 @@ CREATE TABLE works_on (
     ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_project_works_on  FOREIGN KEY (Pno)  REFERENCES project (Pnumber)
     ON UPDATE CASCADE
-) ENGINE = InnoDB;
+);
  
 CREATE TABLE dependent (
   Essn            CHAR(9)      NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE dependent (
   CONSTRAINT chk_dependent_sex  CHECK (Sex IN ('M', 'F')),
   CONSTRAINT fk_dependent       FOREIGN KEY (Essn) REFERENCES employee (Ssn)
     ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE = InnoDB;
+);
  
 -- ---------------------------------------------------------------------
 -- DADOS (supervisores antes dos subordinados, por causa de fk_employee_super)
