@@ -71,7 +71,6 @@ FROM employee
 ORDER BY idade DESC;
  
 -- B4. Quem ganha acima da média do próprio departamento
---     (window function não pode ir no WHERE, por isso a tabela derivada)
 SELECT colaborador, departamento, Salary, media_depto
 FROM (
   SELECT CONCAT(e.Fname, ' ', e.Lname)                  AS colaborador,
@@ -93,7 +92,7 @@ FROM employee e
 JOIN departament d ON d.Dnumber = e.Dno
 ORDER BY d.Dname, posicao, colaborador;
  
--- B6. Maior salário de cada departamento, UMA linha por depto (ROW_NUMBER não repete)
+-- B6. Maior salário de cada departamento, UMA linha por depto
 --     Para "top N", troque rn = 1 por rn <= N.
 WITH ranking AS (
   SELECT e.Dno, e.Fname, e.Lname, e.Salary,
@@ -124,7 +123,7 @@ JOIN employee s ON s.Ssn = e.Super_ssn
 GROUP BY s.Ssn, s.Fname, s.Lname
 ORDER BY subordinados DESC;
  
--- C3. Organograma completo (WITH RECURSIVE): nível e caminho até o topo
+-- C3. Organograma completo 
 WITH RECURSIVE org AS (
   SELECT Ssn, CONCAT(Fname, ' ', Lname) AS nome, 0 AS nivel,
          CAST(CONCAT(Fname, ' ', Lname) AS CHAR(300)) AS caminho
@@ -192,13 +191,13 @@ LEFT JOIN works_on w ON w.Essn = e.Ssn
 GROUP BY e.Ssn, e.Fname, e.Lname
 ORDER BY total_horas DESC, colaborador;
  
--- D3. Colaboradores com mais de 40 horas alocadas (possível sobrecarga)
+-- D3. Colaboradores com mais de 44 horas alocadas (possível sobrecarga)
 SELECT CONCAT(e.Fname, ' ', e.Lname) AS colaborador,
        SUM(w.Hours) AS horas_alocadas
 FROM employee e
 JOIN works_on w ON w.Essn = e.Ssn
 GROUP BY e.Ssn, e.Fname, e.Lname
-HAVING SUM(w.Hours) > 40;
+HAVING SUM(w.Hours) > 44;
  
 -- D4. Colaboradores sem horas lançadas (sem registro ou com 0 hora)
 SELECT CONCAT(e.Fname, ' ', e.Lname) AS colaborador,
@@ -211,26 +210,16 @@ GROUP BY e.Ssn, e.Fname, e.Lname, d.Dname
 HAVING COALESCE(SUM(w.Hours), 0) = 0;
  
 -- D5. Custo estimado de mão de obra por projeto
---     Premissas: Salary é mensal e o mês tem 160 horas úteis (ajuste à regra real).
+--     Premissa: Salary é mensal e o mês tem em média 174 horas úteis (ajuste à regra real).
 SELECT p.Pname AS projeto,
-       ROUND(SUM(w.Hours * e.Salary) / 160, 2) AS custo_estimado
+       ROUND(SUM(w.Hours * e.Salary) / 174, 2) AS custo_estimado
 FROM works_on w
 JOIN employee e ON e.Ssn = w.Essn
 JOIN project  p ON p.Pnumber = w.Pno
 GROUP BY p.Pnumber, p.Pname
 ORDER BY custo_estimado DESC;
- 
--- D6. Projetos executados fora das localizações do departamento responsável
---     (NOT EXISTS: seguro com NULL e eficiente)
-SELECT p.Pname AS projeto, p.Plocation, d.Dname AS departamento
-FROM project p
-JOIN departament d ON d.Dnumber = p.Dnum
-WHERE NOT EXISTS (
-  SELECT 1 FROM dept_locations l
-  WHERE l.Dnumber = p.Dnum AND l.Dlocation = p.Plocation
-);
- 
--- D7. Horas em projetos de OUTRO departamento (alocação entre departamentos)
+
+-- D6. Horas em projetos de OUTRO departamento (alocação entre departamentos)
 SELECT CONCAT(e.Fname, ' ', e.Lname) AS colaborador,
        de.Dname AS depto_do_colaborador,
        p.Pname  AS projeto,
@@ -244,7 +233,8 @@ JOIN departament dp ON dp.Dnumber = p.Dnum
 WHERE e.Dno <> p.Dnum
 ORDER BY w.Hours DESC;
  
--- D8. Projetos em Stafford com dados do gerente do departamento responsável
+-- D7. Projetos em Stafford com dados do gerente do departamento responsável
+-- Ajuste o deparamento caso seja necessário
 SELECT p.Pnumber, p.Pname, d.Dname, e.Lname AS gerente, e.Address, e.Bdate
 FROM project p
 JOIN departament d ON d.Dnumber = p.Dnum
@@ -261,7 +251,7 @@ FROM dependent
 GROUP BY Relationship
 ORDER BY quantidade DESC, relacao;
  
--- E2. Quantidade de dependentes por funcionário (já com GROUP BY, ao contrário do original)
+-- E2. Quantidade de dependentes por funcionário 
 SELECT e.Ssn, CONCAT(e.Fname, ' ', e.Lname) AS colaborador,
        COUNT(*) AS qtd_dependentes
 FROM employee e
@@ -269,7 +259,7 @@ JOIN dependent dp ON dp.Essn = e.Ssn
 GROUP BY e.Ssn, e.Fname, e.Lname
 ORDER BY qtd_dependentes DESC, colaborador;
  
--- E3. Funcionários SEM dependentes (anti-join)
+-- E3. Funcionários SEM dependentes
 SELECT CONCAT(e.Fname, ' ', e.Lname) AS colaborador
 FROM employee e
 WHERE NOT EXISTS (SELECT 1 FROM dependent dp WHERE dp.Essn = e.Ssn)
@@ -300,9 +290,17 @@ FROM employee
 WHERE Salary IS NULL OR Salary <= 2000;
  
 -- F3. Registros de horas zerados ou negativos
-SELECT Essn, Pno, Hours
-FROM works_on
-WHERE Hours <= 0;
+SELECT
+    CONCAT(e.Fname, ' ', e.Lname) AS Nome_Colaborador,
+    d.Dname                       AS Departamento,
+    w.Pno,
+    w.Hours
+FROM Works_on w
+JOIN Employee e
+    ON w.Essn = e.Ssn
+JOIN Departament d
+    ON e.Dno = d.Dnumber
+WHERE w.Hours <= 0;
  
 -- F4. Dependentes órfãos (sem funcionário) — só ocorre se a FK não estiver aplicada
 SELECT dp.Essn, dp.Dependent_name
@@ -369,7 +367,7 @@ WHERE p.Pname = 'ProductX'
   AND EXISTS (SELECT 1 FROM departament d WHERE d.Mgr_ssn = e.Ssn);
  
 -- =====================================================================
--- H. VIEWS PARA O POWER BI (opcionais; o .pbix atual NÃO depende delas)
+-- H. VIEWS PARA O POWER BI
 -- =====================================================================
 CREATE OR REPLACE VIEW vw_resumo_departamento AS
 SELECT d.Dnumber,
